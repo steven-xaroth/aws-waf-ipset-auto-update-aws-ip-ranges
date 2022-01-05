@@ -13,20 +13,27 @@ Parameters:
     Description: The S3 object name of Lambda function's packaged code.
   IPV4SetNameSuffix: 
     Type: String
-    Default: IPv4Set
+    Default: IPv4
     Description: The AWS WAF IPv4 set suffix. The prefix will be the stack name. The IP set is initially created with a bogus address
   IPV6SetNameSuffix: 
     Type: String
-    Default: IPv6Set
+    Default: IPv6
     Description: The AWS WAF IPv6 set suffix. The prefix will be the stack name. The IP set is initially created with a bogus address
   SERVICES:
     Type: String
-    Default: ROUTE53_HEALTHCHECKS,CLOUDFRONT
+    Default: ROUTE53_HEALTHCHECKS,CLOUDFRONT,EC2
     Description: Enter the name of the AWS services to add, separated by commas and as explained in https://docs.aws.amazon.com/general/latest/gr/aws-ip-ranges.html
   EC2REGIONS:
     Type: String
     Default: 'all'
     Description: For the "EC2" service, specify the AWS regions to add, separated by commas. Use 'all' to add all AWS regions.
+  IPSETSCOPE:
+    Type: String
+    Default: CLOUDFRONT
+    AllowedValues:
+      - REGIONAL
+      - CLOUDFRONT
+    Description: Select REGIONAL or CLOUDFRONT. WAF IP sets can either be used for REGIONAL resources or for CLOUDFRONT. REGIONAL IP sets will be created in the region where template is deployed. CLOUDFRONT IP Sets are required to be deployed in us-east-1.
 
 Resources:
   IPv4Set:
@@ -39,7 +46,8 @@ Resources:
       Name: !Sub
         - ${AWS::StackName}-${Suffix}
         - {Suffix: !Ref IPV4SetNameSuffix}
-      Scope: REGIONAL
+      Scope:
+        Ref: IPSETSCOPE
 
   IPv6Set:
     Type: AWS::WAFv2::IPSet
@@ -51,7 +59,8 @@ Resources:
       Name: !Sub
         - ${AWS::StackName}-${Suffix}
         - {Suffix: !Ref IPV6SetNameSuffix}
-      Scope: REGIONAL
+      Scope:
+        Ref: IPSETSCOPE
 
   LambdaUpdateWAFIPSet:
     Type: AWS::Lambda::Function
@@ -76,6 +85,8 @@ Resources:
           EC2_REGIONS:
             Ref: EC2REGIONS
           INFO_LOGGING: "false"
+          IPSETSCOPE:
+            Ref: IPSETSCOPE
 
       FunctionName: !Sub '${AWS::StackName}-UpdateWAFIPSets'
       Handler: update_aws_waf_ipset.lambda_handler

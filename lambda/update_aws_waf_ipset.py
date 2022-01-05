@@ -27,7 +27,10 @@ if EC2_REGIONS == ['']: EC2_REGIONS = ['all']
 
 # Set logging level from environment variable
 INFO_LOGGING = os.getenv('INFO_LOGGING','false')
-if INFO_LOGGING == ['']: INFO_LOGGING = 'false'
+if not INFO_LOGGING: INFO_LOGGING = 'false'
+
+IPSETSCOPE = os.getenv('IPSETSCOPE','CLOUDFRONT')
+if not IPSETSCOPE: IPSETSCOPE = 'CLOUDFRONT'
 
 #######
 
@@ -134,7 +137,7 @@ def update_waf_ipset(ipset_name,ipset_id,address_list):
 
     waf_client.update_ip_set(
         Name=ipset_name,
-        Scope='REGIONAL',
+        Scope=IPSETSCOPE,
         Id=ipset_id,
         Addresses=address_list,
         LockToken=lock_token
@@ -146,7 +149,7 @@ def get_ipset_lock_token(client,ipset_name,ipset_id):
     """Returns the AWS WAF IP set lock token"""
     ip_set = client.get_ip_set(
         Name=ipset_name,
-        Scope='REGIONAL',
+        Scope=IPSETSCOPE,
         Id=ipset_id)
     
     return ip_set['LockToken']
